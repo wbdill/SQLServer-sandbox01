@@ -2,7 +2,9 @@
 -- Desc: Queries all date-based columns for existence of future dates
 -- Auth: @bdill Brian Dill
 -- Date: 2022-04-28
+
 -- =======================================================================================
+-- Create a perma-temp table to store results
 DROP TABLE IF EXISTS dbo.ztmp_DateColsFutureDateCheck
 CREATE TABLE dbo.ztmp_DateColsFutureDateCheck ( 
 	  ID INT NOT NULL IDENTITY CONSTRAINT PK_ztmp_DateColsFutureDateCheck PRIMARY KEY
@@ -12,7 +14,9 @@ CREATE TABLE dbo.ztmp_DateColsFutureDateCheck (
 	, DataType VARCHAR(50) NULL
 	, NumOfFutureDates INT NULL 
 	, SqlSelect VARCHAR(2000) NULL
+	, Created DATETIME2(3) NULL CONSTRAINT DF_ztmp_DateColsFutureDateCheck_Created DEFAULT GETDATE()
 )
+
 -- =======================================================================================
 -- Populate ztmp table with a cursor.
 SET NOCOUNT ON
@@ -42,21 +46,23 @@ OPEN cur001
 FETCH NEXT FROM cur001 INTO @SchemaName, @TableName, @ColName, @DataType, @SqlSelectCount, @SqlSelectRows
 WHILE @@FETCH_STATUS = 0
 BEGIN
+	-- Get the COUNT(*) of rows with a future date for specified table/column
 	DECLARE @ParmDefinition nvarchar(500) = N'@retValOUT INT OUTPUT'
-    EXEC dbo.sp_executesql @SqlSelectCount, @ParmDefinition, @retvalOut = @NumOfFutureDates OUTPUT
+	EXEC dbo.sp_executesql @SqlSelectCount, @ParmDefinition, @retvalOut = @NumOfFutureDates OUTPUT
 
 	PRINT 'NumOfFutureDates:' + CONVERT(VARCHAR(50), @NumOfFutureDates) + ' for ' + @SchemaName + '.' + @TableName + ' ' + @ColName
 
 	SET @SqlIns = N'INSERT INTO dbo.ztmp_DateColsFutureDateCheck (SchemaName, TableName, ColName, DataType, NumOfFutureDates, SqlSelect) '
-				+ ' VALUES (''' +@SchemaName + ''', ''' + @TableName + ''', '''+ @ColName + ''', '''+ @DataType + ''', '+ CONVERT(VARCHAR(50), @NumOfFutureDates) + ', ''' + @SqlSelectRows + ''');'
+			+ ' VALUES (''' +@SchemaName + ''', ''' + @TableName + ''', '''+ @ColName + ''', '''+ @DataType + ''', ' + CONVERT(VARCHAR(50), @NumOfFutureDates) + ', ''' + @SqlSelectRows + ''');'
 
-	EXEC dbo.sp_executesql @SqlIns
+	EXEC dbo.sp_executesql @SqlIns  -- Populate the ztmp table
 
 	FETCH NEXT FROM cur001 INTO @SchemaName, @TableName, @ColName, @DataType, @SqlSelectCount, @SqlSelectRows
 END
 CLOSE cur001
 DEALLOCATE cur001
 
+-- Look at all the columns with at least 1 future date
 SELECT * FROM dbo.ztmp_DateColsFutureDateCheck WHERE NumOfFutureDates > 0
 
 
