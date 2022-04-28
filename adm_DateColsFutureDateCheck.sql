@@ -1,7 +1,9 @@
 -- =======================================================================================
 -- Desc: Queries all date-based columns for existence of future dates
--- Auth: @bdill Brian Dill
--- Date: 2022-04-28
+-- License:	ShoutOutWare - give me a shout out on Twitter @bdill if this script helped you. :) (retain comments and do not redistribute)
+-- Auth: 	Brian Dill 2021-04-28
+-- Script home: https://github.com/wbdill/SQLServer-sandbox01/blob/master/adm_DateColsFutureDateCheck.sql
+-- Other useful scripts: https://github.com/wbdill/SQLServer-sandbox01
 
 -- =======================================================================================
 -- Create a perma-temp table to store results
