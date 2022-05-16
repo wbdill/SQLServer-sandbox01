@@ -13,29 +13,29 @@
 
 DROP TABLE IF EXISTS dbo.ztmp_FK_analysis_bdill
 ;WITH Cand AS (
-	SELECT S.name								AS Candidate_Schema
-		, T.name								AS Candidate_Table
-		, C.name								AS Candidate_Column
-		, S.name + '.' + T.name + '.' + C.name	AS Candidate_Full
+	SELECT S.name                               AS Candidate_Schema
+		, T.name                                AS Candidate_Table
+		, C.name                                AS Candidate_Column
+		, S.name + '.' + T.name + '.' + C.name  AS Candidate_Full
 	FROM sys.schemas AS S
 	JOIN sys.tables  AS T ON T.schema_id = S.schema_id
 	JOIN sys.columns AS C ON C.object_id = T.object_id
 
-	WHERE (C.name LIKE '%ID' OR C.name LIKE '%SignedBy')    -- << Enter desired criteria for what might make a candidate column
-	AND S.name NOT IN ('srim')								-- << Enter desired criteria for what might make a candidate column
-	AND T.name NOT IN ('tmpUsers', 'sysdiagrams')			-- << Enter desired criteria for what might make a candidate column
-	AND T.name NOT LIKE 'ztmp_%'							-- << Enter desired criteria for what might make a candidate column
-	AND T.name NOT LIKE 'tmp_%'								-- << Enter desired criteria for what might make a candidate column
+	WHERE (C.name LIKE '%ID' OR C.name LIKE '%SignedBy')  -- << Enter desired criteria for what might make a candidate column
+	AND S.name NOT IN ('srim')                            -- << Enter desired criteria for what might make a candidate column
+	AND T.name NOT IN ('tmpUsers', 'sysdiagrams')         -- << Enter desired criteria for what might make a candidate column
+	AND T.name NOT LIKE 'ztmp_%'                          -- << Enter desired criteria for what might make a candidate column
+	AND T.name NOT LIKE 'tmp_%'                           -- << Enter desired criteria for what might make a candidate column
 ) 
 , FKs AS (  -- https://dataedo.com/kb/query/sql-server/list-foreign-keys-sql-queries
 	SELECT SCHEMA_NAME(fk_tab.schema_id) + '.' + fk_tab.name + '.'+ fk_col.name AS FK_Full
-		 , fk_tab.name															AS FK_Table
-		 , fk_col.name															AS FK_Column
-		 , '>-'																	AS rel
-		 , SCHEMA_NAME(pk_tab.schema_id) + '.' + pk_tab.name					AS FK_PK_Table
-		 , pk_col.name															AS FK_PK_Column
-		 , fk.name																AS FK_Name
-		 , fk_cols.constraint_column_id											AS FK_colid
+		 , fk_tab.name                                                          AS FK_Table
+		 , fk_col.name                                                          AS FK_Column
+		 , '>-'	                                                                AS rel
+		 , SCHEMA_NAME(pk_tab.schema_id) + '.' + pk_tab.name                    AS FK_PK_Table
+		 , pk_col.name                                                          AS FK_PK_Column
+		 , fk.name                                                              AS FK_Name
+		 , fk_cols.constraint_column_id                                         AS FK_colid
 	FROM sys.foreign_keys              AS fk
 	INNER JOIN sys.tables              AS fk_tab ON fk_tab.object_id = fk.parent_object_id
 	INNER JOIN sys.tables              AS pk_tab ON pk_tab.object_id = fk.referenced_object_id
@@ -59,10 +59,10 @@ DROP TABLE IF EXISTS dbo.ztmp_FK_analysis_bdill
 -- Query the 3 CTEs
 SELECT Cand.Candidate_Full
      , Cand.Candidate_Schema
-	 , Cand.Candidate_Table
+     , Cand.Candidate_Table
      , Cand.Candidate_Column
-	 , CASE WHEN PKs.PK_Full IS NULL THEN 0 ELSE 1 END AS IsPK
-	 , CASE WHEN FKs.FK_Full IS NULL THEN 0 ELSE 1 END AS HasFK
+     , CASE WHEN PKs.PK_Full IS NULL THEN 0 ELSE 1 END AS IsPK
+     , CASE WHEN FKs.FK_Full IS NULL THEN 0 ELSE 1 END AS HasFK
      , FKs.FK_Full
      , FKs.FK_Table
      , FKs.FK_Column
