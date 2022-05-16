@@ -55,6 +55,7 @@ DROP TABLE IF EXISTS dbo.ztmp_FK_analysis_bdill
 	INNER JOIN sys.index_columns AS ic ON ic.object_id = pk.object_id AND ic.index_id = pk.index_id
 	INNER JOIN sys.columns       AS col ON pk.object_id = col.object_id AND col.column_id = ic.column_id
 )
+-- =======================================================================================
 -- Query the 3 CTEs
 SELECT Cand.Candidate_Full
      , Cand.Candidate_Schema
@@ -81,15 +82,18 @@ FROM Cand
 LEFT OUTER JOIN FKs ON Cand.Candidate_Full = FKs.FK_Full
 LEFT OUTER JOIN PKs ON Cand.Candidate_Full = PKs.PK_Full
 
+-- =======================================================================================
 -- Query 1) Entire table
 -- SELECT * FROM dbo.ztmp_FK_analysis_bdill
 
+-- =======================================================================================
 -- Query 2) Tables with Composite Primary Keys (CPK).  Look at each of the cols to see if they need to have a FK.
 SELECT PK_Schema, PK_Table, STRING_AGG(PK_Column, ', ') AS CPK_Cols, PK_Name, COUNT(*) AS NumCols, 'Query 2 - Tables with CPKs' AS Info
 FROM dbo.ztmp_FK_analysis_bdill 
 WHERE PK_Name IS NOT NULL 
 GROUP BY PK_Schema, PK_Table, PK_Name HAVING COUNT(*) > 1
 
+-- =======================================================================================
 -- Query 3) Candidates that don't have a FK (and are NOT a PK) - i.e. you PROBABLY need to create FK's for these columns
 -- You will need to define the correct parent (dbo.__ParentTable__) after "REFERENCES" in the FKScript_Helper
 -- If the FK column name and PK column name are not the same, you will also need to modify the column for the __ParentTable__ in the FKScript_Helper
@@ -103,6 +107,7 @@ WHERE FK_Full IS NULL  -- Candidates that DON'T already have a FK...
 AND PK_Full IS NULL    -- ... and are NOT a PK b/c PK's usually aren't also FKs (Except for CPK's - see Query 2)
 ORDER BY Candidate_Full
 
+-- =======================================================================================
 -- Query 4) Distinct Candidate tables with 1+ Candidate columns without a FK
 SELECT Candidate_Table, STRING_AGG(Candidate_Column, ', ') AS CandiateCols, COUNT(*) AS NumOfCandidateCol
 	, 'Query 4 - Cand tables w/ 1+ cand cols.  Like query 3, but 1 row / table' AS Info
