@@ -68,4 +68,5 @@ DEALLOCATE cur001
 SELECT * FROM dbo.ztmp_DateColsFutureDateCheck WHERE NumOfFutureDates > 0
 
 
+
 GO
