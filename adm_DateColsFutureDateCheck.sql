@@ -1,5 +1,5 @@
 -- =======================================================================================
--- Desc: Queries all date-based columns for existence of future dates
+-- Desc:    Queries all date-based columns for existence of future dates
 -- License:	ShoutOutWare - give me a shout out on Twitter @bdill if this script helped you. :) (retain comments and do not redistribute)
 -- Auth: 	Brian Dill 2021-04-28
 -- Script home: https://github.com/wbdill/SQLServer-sandbox01/blob/master/adm_DateColsFutureDateCheck.sql
