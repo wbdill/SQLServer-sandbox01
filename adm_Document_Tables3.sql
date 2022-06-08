@@ -3,11 +3,8 @@ CREATE OR ALTER PROCEDURE dbo.adm_Document_Tables3
 	-- Desc:	Selects meta data about tables/columns including the MS_Description extended propertes (if any) in each table/column
 	-- License:	ShoutOutWare - give me a shout out on Twitter @bdill if this script helped you. :) (retain comments and do not redistribute)
 	-- Auth: 	Brian Dill 2021-03-16
-	-- Script home: https://github.com/wbdill/SQLServer-sandbox01/blob/master/adm_Document_Tables2.sql
+	-- Script home: https://github.com/wbdill/SQLServer-sandbox01/blob/master/adm_Document_Tables3.sql
 	-- Other useful scripts: https://github.com/wbdill/SQLServer-sandbox01
-
-	-- Note:	Paste this in cell L2 of a dump to Excel to get SQL code to update the MS_Description extended properties in SQL
-	--          ="EXEC dbo.adm_TableAndColumnExtendedProperty_ups '"&A2&"', '"&B2&"', '"&C2&"', '"&K2&"'"
 	-- Upd:     2022-06-07 bdill - added param @ReportType to get tables(only), columns(only) or combined(old style)
 
 	  @TableNameLike VARCHAR(100) = '%'
