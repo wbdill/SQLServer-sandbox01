@@ -106,11 +106,12 @@ UPDATE #colcounts SET
 , NullSpec = X.NullSpec
 FROM (
 	SELECT S.name AS SchemaName, T.name AS TableName, C.name AS ColumnName
-		, CASE WHEN Y.name IN ('int', 'bigint', 'tinyint', 'bit', 'date', 'smalldatetime') THEN Y.name
-		  WHEN Y.name IN ('char', 'nchar', 'varchar', 'nvarchar') AND y.max_length = 8000 THEN Y.name + '(MAX)' 
-		  WHEN Y.name IN ('char', 'nchar', 'varchar', 'nvarchar') AND y.max_length > 0 THEN Y.name + '(' + CONVERT(VARCHAR(50), y.max_length) + ')' 
-		  WHEN Y.name IN ('datetime2') THEN Y.name + '(' + CONVERT(varchar(50), C.scale) + ')'
-		  ELSE Y.name END AS DataType
+			, CASE 
+				WHEN Y.name IN ('varchar', 'nvarchar') AND C.max_length = -1 THEN UPPER(Y.name) + '(MAX)'
+				WHEN Y.name IN ('char', 'varchar', 'datetime2') THEN UPPER(Y.name) + '(' + CONVERT(VARCHAR(10), C.max_length) + ')'
+				WHEN Y.name IN ('nvarchar', 'nchar') THEN UPPER(Y.name) + '(' + CONVERT(VARCHAR(10), C.max_length/2) + ')'
+				WHEN Y.name IN ('float', 'numeric', 'decimal') THEN UPPER(Y.name) + '(' + CONVERT(VARCHAR(10), C.precision) + ', ' + CONVERT(VARCHAR(10), C.scale) + ')'
+				ELSE UPPER(Y.name) END AS DataType
 		, CASE C.is_nullable WHEN 1 THEN 'NULL' ELSE 'NOT NULL' END AS NullSpec
 	FROM sys.schemas AS S
 	JOIN sys.tables AS T ON T.schema_id = S.schema_id
