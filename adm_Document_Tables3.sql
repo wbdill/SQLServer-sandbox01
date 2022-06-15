@@ -6,6 +6,7 @@ CREATE OR ALTER PROCEDURE dbo.adm_Document_Tables3
 	-- Script home: https://github.com/wbdill/SQLServer-sandbox01/blob/master/adm_Document_Tables3.sql
 	-- Other useful scripts: https://github.com/wbdill/SQLServer-sandbox01
 	-- Upd:     2022-06-07 bdill - added param @ReportType to get tables(only), columns(only) or combined(old style)
+	-- Upd:		2022-06-15 bdill - minor syntax changes
 
 	  @TableNameLike VARCHAR(100) = '%'
 	, @ColumnNameLike VARCHAR(100) = '%'
@@ -18,8 +19,7 @@ BEGIN
 	-- =======================================================================================
 	-- Create a temp table to hold all of the descriptions for alter joining.
 
-	IF OBJECT_ID('tempdb..#tmpDescColumns') IS NOT NULL 
-		DROP TABLE #tmpDescColumns 
+	DROP TABLE IF EXISTS #tmpDescColumns 
 
 	CREATE TABLE #tmpDescColumns (  
 		  DescID               INT IDENTITY(1,1) NOT NULL
@@ -32,8 +32,7 @@ BEGIN
 	-- =======================================================================================
 	-- temp table for all PKs FKs
 	
-	IF OBJECT_ID('tempdb..#tmpKeys') IS NOT NULL 
-		DROP TABLE #tmpKeys 
+	DROP TABLE IF EXISTS #tmpKeys 
 
 	CREATE TABLE #tmpKeys (
 		  SchemaName VARCHAR(100) NOT NULL
@@ -85,12 +84,9 @@ BEGIN
 	-- =======================================================================================
 	-- Populate
 
-
-
 	IF (@ReportType = 'combined' OR @ReportType = 'columns')
 	BEGIN 
-		IF OBJECT_ID('tempdb..#tmpOutput') IS NOT NULL 
-			DROP TABLE #tmpOutput 
+		DROP TABLE IF EXISTS #tmpOutput 
 		CREATE TABLE #tmpOutput (
 			  SchemaName varchar(100)
 			, TableName VARCHAR(100)
@@ -169,12 +165,9 @@ BEGIN
 	IF (@ReportType = 'tables')
 	BEGIN 
 		
-		IF OBJECT_ID('tempdb..#tmpTableNames') IS NOT NULL
-			DROP TABLE #tmpTableNames
-		IF OBJECT_ID('tempdb..#tmpSpaceUsed') IS NOT NULL
-			DROP TABLE #tmpSpaceUsed
-		IF OBJECT_ID('tempdb..#tmpTableStats') IS NOT NULL
-			DROP TABLE #tmpTableStats
+		DROP TABLE IF EXISTS #tmpTableNames
+		DROP TABLE IF EXISTS #tmpSpaceUsed
+		DROP TABLE IF EXISTS #tmpTableStats
 
 		-- #tmpTableNames holds table names of all tables in the current DB
 		CREATE TABLE #tmpTableNames ( SchemaName VARCHAR(100), TableName VARCHAR(100), object_id INT, NumCols INT)
@@ -252,14 +245,10 @@ BEGIN
 
 	-- =======================================================================================
 	-- cleanup
-	IF OBJECT_ID('tempdb..#tmpDescColumns') IS NOT NULL 
-		DROP TABLE #tmpDescColumns 
-	IF OBJECT_ID('tempdb..#tmpOutput') IS NOT NULL 
-		DROP TABLE #tmpOutput 
-	IF OBJECT_ID('tempdb..#tmpTableStats') IS NOT NULL
-		DROP TABLE #tmpTableStats
-	IF OBJECT_ID('tempdb..#tmpKeys') IS NOT NULL 
-		DROP TABLE #tmpKeys 
-	IF OBJECT_ID('tempdb..#tmpSpaceUsed') IS NOT NULL 
-		DROP TABLE #tmpSpaceUsed 
+	DROP TABLE IF EXISTS #tmpDescColumns 
+	DROP TABLE IF EXISTS #tmpOutput 
+	DROP TABLE IF EXISTS #tmpTableStats
+	DROP TABLE IF EXISTS #tmpKeys 
+	DROP TABLE IF EXISTS #tmpSpaceUsed 
 END 
+GO
