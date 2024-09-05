@@ -6,11 +6,12 @@ CREATE OR ALTER PROCEDURE dbo.adm_Document_Tables3
 	-- Script home: https://github.com/wbdill/SQLServer-sandbox01/blob/master/adm_Document_Tables3.sql
 	-- Other useful scripts: https://github.com/wbdill/SQLServer-sandbox01
 	-- Upd:     2022-06-07 bdill - added param @ReportType to get tables(only), columns(only) or combined(old style)
-	-- Upd:		2022-06-15 bdill - minor syntax changes
+	-- Upd:		2023-07-13 bdill - added param @SchemaNameLike
 
-	  @TableNameLike VARCHAR(100) = '%'
+	  @SchemaNameLike VARCHAR(100) = '%'
+	, @TableNameLike VARCHAR(100) = '%'
 	, @ColumnNameLike VARCHAR(100) = '%'
-	, @ReportType VARCHAR(100) = 'combined'  --  other options: 'tables' or 'columns'
+	, @ReportType VARCHAR(100) = 'combined'  --  options: combined|both|B|TC,  tables|T,  columns|C
 
 AS
 BEGIN 
@@ -53,8 +54,9 @@ BEGIN
 			SELECT T.object_id, S.name, T.name
 			FROM sys.tables AS T
 			JOIN sys.schemas AS S ON S.schema_id = T.schema_id
-			WHERE T.name LIKE @TableNameLike
-			ORDER BY T.name
+			WHERE S.name LIKE @SchemaNameLike
+			AND T.name LIKE @TableNameLike
+			ORDER BY S.name, T.name
 
 	DECLARE @id INT, @current_schema_name VARCHAR(255), @current_table_name VARCHAR(256)
 	OPEN cur_tables
@@ -65,7 +67,7 @@ BEGIN
 			-- Insert the descriptions for the COLUMNS in the current table into #tmpDescColumns
 
 			INSERT INTO #tmpDescColumns (SchemaName, TableName, ColumnName, Description)
-			SELECT    @current_schema_name, @current_table_name, objname, Convert(varchar(4000), value)
+			SELECT    @current_schema_name, @current_table_name, objname, CONVERT(VARCHAR(4000), value)
 			FROM   fn_listextendedproperty ('MS_Description', 'schema', @current_schema_name, 'table', @current_table_name, 'column', NULL)
 
 			-- =======================================================================================
@@ -83,8 +85,7 @@ BEGIN
 
 	-- =======================================================================================
 	-- Populate
-
-	IF (@ReportType = 'combined' OR @ReportType = 'columns')
+	IF (@ReportType IN ('combined', 'columns', 'C', 'B', 'TC') )
 	BEGIN 
 		DROP TABLE IF EXISTS #tmpOutput 
 		CREATE TABLE #tmpOutput (
@@ -134,12 +135,13 @@ BEGIN
 		LEFT OUTER JOIN #tmpKeys AS K ON K.SchemaName = S.name AND K.TableName = T.name AND K.ColumnName = C.name
 		LEFT OUTER JOIN #tmpDescColumns AS TDC ON TDC.SchemaName = S.name AND TDC.TableName = T.name AND TDC.ColumnName = c.name
 		WHERE T.name <> 'sysdiagrams'
+		AND S.Name LIKE @SchemaNameLike
 		AND T.name LIKE @TableNameLike
 		AND C.name LIKE @ColumnNameLike
 	END 
 	
 	-- =======================================================================================
-	IF (@ReportType = 'combined')
+	IF (@ReportType IN ('combined', 'both', 'TC'))
 	BEGIN 
 	-- Row for each table
 		INSERT INTO #tmpOutput (SchemaName, TableName, ColumnName, DataTypeSpec, Nullable, [Identity], [Default], [Key], RefersTo, column_id, Description)
@@ -149,12 +151,13 @@ BEGIN
 		FROM sys.tables AS T
 		JOIN sys.schemas AS S ON S.schema_id = T.schema_id
 		LEFT OUTER JOIN #tmpDescColumns AS TDC ON TDC.SchemaName = S.name AND TDC.TableName = T.name AND TDC.ColumnName = ''
-		WHERE T.name LIKE @TableNameLike
+		WHERE S.name LIKE @SchemaNameLike
+		AND T.name LIKE @TableNameLike
 	END 
 
 	-- =======================================================================================
 	-- Final SELECT for 'combined' or 'columns'
-	IF (@ReportType = 'combined' OR @ReportType = 'columns')
+	IF (@ReportType IN ('combined', 'columns', 'B', 'TC', 'C') )
 	BEGIN
 		SELECT * FROM #tmpOutput
 		ORDER BY SchemaName, TableName, column_id
@@ -162,7 +165,7 @@ BEGIN
 
 	-- =======================================================================================
 	-- Populate and final SELECT for 'tables'
-	IF (@ReportType = 'tables')
+	IF (@ReportType IN ('tables', 'T'))
 	BEGIN 
 		
 		DROP TABLE IF EXISTS #tmpTableNames
@@ -196,7 +199,8 @@ BEGIN
 		FROM sys.tables AS T 
 		JOIN sys.schemas AS S ON S.schema_id = T.schema_id 
 		JOIN sys.columns AS C ON C.object_id = T.object_id 
-		WHERE T.name LIKE @TableNameLike
+		WHERE S.Name LIKE @SchemaNameLike
+		AND T.name LIKE @TableNameLike
 		GROUP BY S.name, T.name, T.object_id
 		
 		DECLARE curTables CURSOR LOCAL FORWARD_ONLY FOR
