@@ -102,7 +102,7 @@ SELECT 'Query 2 - Cols that probably need a FK' AS Info
 	, Candidate_Full, Candidate_Table, Candidate_Column
 	, 'ALTER TABLE ' + Candidate_Schema + '.' + Candidate_Table + ' ADD CONSTRAINT FK_' + Candidate_Table + '_' + Candidate_Column 
 		+ ' FOREIGN KEY (' + Candidate_Column + ') REFERENCES dbo.__ParentTable__ (' + Candidate_Column + ')'
-		+ 'ON UPDATE NO ACTION  ON DELETE  NO ACTION; ' AS FKScript_Helper__set_ParentTable_and_schema
+		+ ' ON UPDATE NO ACTION  ON DELETE  NO ACTION; ' AS FKScript_Helper__set_ParentTable_and_schema
 
 FROM dbo.ztmp_FK_analysis_bdill 
 WHERE FK_Full IS NULL  -- Candidates that DON'T already have a FK...
