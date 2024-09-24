@@ -2,10 +2,11 @@
 -- Note: The count report (first result table) will always work, but the individual violator capture (2nd report table) assumes the table has a single-column PK
 -- Note: Search for --<< Customize to see where you can filter out columns and/or tables.
 -- 2024-06-26 - bdill
+-- 2024-09-24 - bdill - added a SQLUpdate column to final output of violators.  Fixed syntax error of SqlInsert column in the first cursor "cur"
 CREATE OR ALTER PROCEDURE dbo.adm_GlobalDateRangeCheck
 	  @LowerDate DATE = '1900-01-01'
 	, @UpperDate DATE = '2100-01-01'
-	, @MaxViolatorsPerTable INT  = 1000 -- how many "bad" dates do you want to log for each table?
+	, @MaxViolatorsPerTable INT  = 100 -- how many "bad" dates do you want to log for each table?
 AS
 BEGIN
 	-- ================================================================================
@@ -114,7 +115,9 @@ BEGIN
 	SELECT * FROM #tmpDateColumnChecks 
 	ORDER BY ViolationRowCount DESC, TableName
 
-	SELECT * FROM #tmpDateColumnViolations 
+	SELECT ID, TableName, IDColumnName, IDValue, DateColumnName, DateValue
+		, CONCAT('UPDATE ', TableName, ' SET ', DateColumnName, ' = ''', DateValue, ''' WHERE ', IDColumnName, ' = ', IDValue) AS SQLUpdate
+	FROM #tmpDateColumnViolations 
 	ORDER BY TableName, DateColumnName, IDValue
 END
 -- ================================================================================
