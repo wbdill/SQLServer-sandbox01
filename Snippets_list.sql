@@ -4,14 +4,14 @@ Make the most out of your snippet manager.
 
 Red-Gate SQL Prompt ($210/yr subscr only) - https://www.red-gate.com/products/sql-prompt/
 Devart SQL Complete ($250/$300/$400 perpetual) - https://www.devart.com/dbforge/sql/sqlcomplete/ordering.html
-SSMS Tools Pack (~$40 per machine) - https://www.ssmstoolspack.com/Licensing
+SSMS Tools Pack (~$40 per machine perpetual) - https://www.ssmstoolspack.com/Licensing
 
 ================================================================================
 <snippet abbreviation> - <description>
 <Actual snippet>
 
 {C} indicates "cursor here" if your snippet manager/utility supports it.
-================================================================================
+
 */
 
 
@@ -22,20 +22,26 @@ SSMS Tools Pack (~$40 per machine) - https://www.ssmstoolspack.com/Licensing
 -- SSF
 SELECT * FROM 
 
+
 -- STT
 SELECT TOP(100) * FROM 
+
 
 -- SCGB - select count group by
 SELECT StatusID, COUNT(*) AS N FROM Orders GROUP BY StatusID ORDER BY StatusID
 
+
 -- SCGBH - select count group by having
 SELECT StatusID, COUNT(*) AS N FROM Orders GROUP BY StatusID HAVING COUNT(*) > 0 ORDER BY StatusID
+
 
 -- lc - line comment
 -- ================================================================================
 
+
 -- lcl - line comment light
 -- --------------------------------------------------------------------------------
+
 
 -- /* - multi-line comment
 /*
