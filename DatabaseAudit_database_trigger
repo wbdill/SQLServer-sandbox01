@@ -1,0 +1,63 @@
+USE model  -- Your desired DB
+GO
+--================================================================================
+-- Create adm schema
+IF NOT EXISTS (SELECT 1 FROM sys.schemas WHERE name = 'adm')
+BEGIN
+    EXEC('CREATE SCHEMA [adm] AUTHORIZATION [dbo]')
+END
+GO
+--================================================================================
+-- Create adm.DatabaseAudit table
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+IF NOT EXISTS (SELECT * FROM sysobjects WHERE name = 'DatabaseAudit' AND xtype = 'U')
+BEGIN
+	CREATE TABLE adm.DatabaseAudit (
+		  ID INT IDENTITY(1,1) NOT NULL
+		, EventTime DATETIME2(2) NULL
+		, EventType VARCHAR(50) NULL
+		, DatabaseName VARCHAR(50) NULL
+		, SchemaName VARCHAR(50) NULL
+		, [Object] VARCHAR(100) NULL
+		, ObjectType VARCHAR(50) NULL
+		, UserAccount VARCHAR(100) NULL
+		, Query VARCHAR(MAX) NULL
+		, [EventData] XML NOT NULL
+	 CONSTRAINT PK_DatabaseAudit PRIMARY KEY CLUSTERED ( ID ASC )
+	 WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
+	) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
+END
+GO
+--================================================================================
+-- Create database trigger DatabaseAudit
+IF NOT EXISTS (SELECT * FROM sys.triggers WHERE name = 'DatabaseAudit' AND parent_class_desc = 'DATABASE')
+BEGIN
+	EXEC dbo.sp_executesql @statement = N'
+	-- 2025-04-14 bdill - initial creation
+	CREATE TRIGGER DatabaseAudit
+	ON DATABASE
+	FOR DDL_TABLE_VIEW_EVENTS                                                 -- Fire the trigger for all tables/ views events
+	  , CREATE_PROCEDURE,ALTER_PROCEDURE,DROP_PROCEDURE                       -- and SP events
+	  , CREATE_SCHEMA, ALTER_SCHEMA, DROP_SCHEMA                              -- and schema events
+	  , CREATE_TRIGGER, ALTER_TRIGGER, DROP_TRIGGER                           -- and trigger events
+	AS
+		INSERT INTO adm.DatabaseAudit (EventTime, EventType, DatabaseName, SchemaName, Object, ObjectType, UserAccount, Query, EventData)
+		SELECT EVENTDATA().value(''(/EVENT_INSTANCE/PostTime)[1]'', ''DATETIME'') AS EventTime
+			  ,EVENTDATA().value(''(/EVENT_INSTANCE/EventType)[1]'', ''NVARCHAR(50)'') AS EventType
+			  ,EVENTDATA().value(''(/EVENT_INSTANCE/DatabaseName)[1]'', ''NVARCHAR(50)'') AS DatabaseName
+			  ,EVENTDATA().value(''(/EVENT_INSTANCE/SchemaName)[1]'', ''NVARCHAR(50)'') AS SchemaName
+			  ,EVENTDATA().value(''(/EVENT_INSTANCE/ObjectName)[1]'', ''NVARCHAR(100)'') AS Object
+			  ,EVENTDATA().value(''(/EVENT_INSTANCE/ObjectType)[1]'', ''NVARCHAR(50)'') AS ObjectType
+			  ,EVENTDATA().value(''(/EVENT_INSTANCE/LoginName)[1]'', ''NVARCHAR(100)'') AS UserAccount
+			  ,EVENTDATA().value(''(/EVENT_INSTANCE/TSQLCommand/CommandText)[1]'', ''NVARCHAR(MAX)'') AS Query
+			  ,EVENTDATA();
+	'
+END
+GO
+
+ENABLE TRIGGER [DatabaseAudit] ON DATABASE
+GO
+
