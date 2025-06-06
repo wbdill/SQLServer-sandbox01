@@ -1,0 +1,33 @@
+USE [master]
+GO
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+-- Desc: kill all spids for a specified database.  Usefull for dropping a DB or taking it offline.
+-- Brian Dill 2025-06-06
+CREATE OR ALTER PROCEDURE dbo.adm_kill_spids
+	@DBName SYSNAME
+AS
+BEGIN
+	DECLARE @killcmd nvarchar(128)
+	DECLARE @spid int
+	DECLARE killcursor CURSOR FOR
+		SELECT DISTINCT spid
+		FROM master.dbo.sysprocesses
+		WHERE dbid IN (SELECT dbid from master.dbo.sysdatabases WHERE name = @dbname)
+		 AND spid >= 10 -- Only select SPID > 10 so we don't kill any system processes
+
+	OPEN killcursor
+	FETCH killcursor into @spid
+	WHILE @@FETCH_STATUS <> -1
+	BEGIN
+	  SET @killcmd = 'kill ' + convert(varchar(10),@spid)
+	  PRINT @killcmd
+	  EXECUTE sp_executesql @killcmd
+	  FETCH killcursor into @spid
+	END
+	CLOSE killcursor
+	DEALLOCATE killcursor
+END
+GO
