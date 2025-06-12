@@ -4,8 +4,9 @@
 -- Date: 2013-11-20
 -- Upd:  2015-01-22 (bdill) getting last full AND log backup for display
 -- Upd:  2025-04-03 (bdill) CAST(size AS BIGINT) to prevent arithmetic overflow
+-- Upd:  2025-06-11 (bdill) Added LastDiffBackup (+ size + user). Proper cased Bulk_Logged
 -- =============================================================================
-ALTER PROCEDURE [dbo].[adm_LastDatabaseBackups_lst]
+CREATE OR PROCEDURE [dbo].[adm_LastDatabaseBackups_lst]
 
 AS
 BEGIN
@@ -23,6 +24,9 @@ BEGIN
 			, LastFullBackup DATETIME NULL
 			, LastFullBackupSizeMB BIGINT NULL
 			, LastFullBackupUser VARCHAR(100) NULL
+			, LastDiffBackup DATETIME NULL
+			, LastDiffBackupSizeMB BIGINT NULL
+			, LastDiffBackupUser VARCHAR(100) NULL
 			, LastLogBackup DATETIME NULL
 			, LastLogBackupSizeMB BIGINT NULL
 			, LastLogBackupUser VARCHAR(100) NULL
@@ -106,6 +110,27 @@ BEGIN
 	  AND ServerName = @@ServerName
 
 	-- =============================================================================
+	-- DIFF backups
+	; WITH cteFullBackups AS (
+		SELECT 
+			  ROW_NUMBER() OVER(PARTITION BY server_name, database_name ORDER BY backup_finish_date DESC ) AS RowNumber
+			, server_name AS ServerName
+			, database_name AS DatabaseName
+			, ISNULL(CONVERT(VARCHAR(16),backup_finish_date, 121), '') AS LastBackup
+			, [user_name] AS UserName
+			, CONVERT(BIGINT, backup_size / (1024 * 1024)) AS BackupSizeMB
+		FROM msdb.dbo.backupset AS B
+		WHERE type = 'I' -- I = Differential
+	)
+	UPDATE #tmpDBs
+	SET LastDiffBackup = X.LastBackup
+		, LastDiffBackupSizeMB = X.BackupSizeMB
+		, LastDiffBackupUser = X.UserName
+	FROM cteFullBackups AS X
+	WHERE X.DatabaseName = #tmpDBs.DBName
+	  AND X.RowNumber = 1
+	  AND ServerName = @@ServerName
+	-- =============================================================================
 	-- Log Backups
 	; WITH cteLogBackups AS (
 		SELECT 
@@ -152,11 +177,14 @@ BEGIN
 			, D.compatibility_level AS CompatibilityLevel
 			, D.is_read_only AS IsReadOnly
 			, D.state_desc AS State
-			, D.recovery_model_desc AS RecoveryModel
+			, CASE WHEN D.recovery_model_desc = 'BULK_LOGGED' THEN 'Bulk_Logged' ELSE D.recovery_model_desc END AS RecoveryModel
 			
 			, ISNULL(CONVERT(VARCHAR(16), TDB.LastFullBackup, 121), '') AS LastFullBackup
 			, ISNULL(CONVERT(VARCHAR(50), TDB.LastFullBackupSizeMB), '') AS LastFullBackupSizeMB
 			, ISNULL(TDB.LastFullBackupUser, '') AS LastFullBackupUser
+			, ISNULL(CONVERT(VARCHAR(16), TDB.LastDiffBackup, 121), '') AS LastDiffBackup
+			, ISNULL(CONVERT(VARCHAR(50), TDB.LastDiffBackupSizeMB), '') AS LastDiffBackupSizeMB
+			, ISNULL(TDB.LastDiffBackupUser, '') AS LastDiffBackupUser
 			, ISNULL(CONVERT(VARCHAR(16), TDB.LastLogBackup, 121), '') AS LastLogBackup
 			, ISNULL(CONVERT(VARCHAR(50), TDB.LastLogBackupSizeMB), '') AS LastLogBackupSizeMB
 			, ISNULL(TDB.LastLogBackupUser, '') AS LastLogBackupUser
