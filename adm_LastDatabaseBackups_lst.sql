@@ -5,8 +5,9 @@
 -- Upd:  2015-01-22 (bdill) getting last full AND log backup for display
 -- Upd:  2025-04-03 (bdill) CAST(size AS BIGINT) to prevent arithmetic overflow
 -- Upd:  2025-06-11 (bdill) Added LastDiffBackup (+ size + user). Proper cased Bulk_Logged
+-- Upd:  2025-06-23 (bdill) Added:  AND B.is_copy_only = 0 AND B.user_name NOT LIKE 'NT AUTHORITY\%'  (for FULL backups)
 -- =============================================================================
-CREATE OR PROCEDURE [dbo].[adm_LastDatabaseBackups_lst]
+ALTER   PROCEDURE [dbo].[adm_LastDatabaseBackups_lst]
 
 AS
 BEGIN
@@ -99,6 +100,8 @@ BEGIN
 			, CONVERT(BIGINT, backup_size / (1024 * 1024)) AS BackupSizeMB
 		FROM msdb.dbo.backupset AS B
 		WHERE type = 'D' -- D = Full
+		AND B.is_copy_only = 0
+		AND B.user_name NOT LIKE 'NT AUTHORITY\%'  -- Skip system/VSS backups
 	)
 	UPDATE #tmpDBs
 	SET LastFullBackup = X.LastBackup
@@ -111,7 +114,7 @@ BEGIN
 
 	-- =============================================================================
 	-- DIFF backups
-	; WITH cteFullBackups AS (
+	; WITH cteDiffBackups AS (
 		SELECT 
 			  ROW_NUMBER() OVER(PARTITION BY server_name, database_name ORDER BY backup_finish_date DESC ) AS RowNumber
 			, server_name AS ServerName
@@ -126,7 +129,7 @@ BEGIN
 	SET LastDiffBackup = X.LastBackup
 		, LastDiffBackupSizeMB = X.BackupSizeMB
 		, LastDiffBackupUser = X.UserName
-	FROM cteFullBackups AS X
+	FROM cteDiffBackups AS X
 	WHERE X.DatabaseName = #tmpDBs.DBName
 	  AND X.RowNumber = 1
 	  AND ServerName = @@ServerName
